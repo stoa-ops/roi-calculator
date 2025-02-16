@@ -17,6 +17,7 @@ import type {
   Savings,
   DriverInsights,
   SelectedPackage,
+  PackageOption as PackageOptionType,
 } from "@/types/calculator";
 import { packages } from "@/data/packages";
 
@@ -357,7 +358,7 @@ export default function ROICalculator() {
   }, []);
 
   const handlePackageSelection = useCallback(
-    (category: string, packageName: string, option: PackageOption) => {
+    (category: string, packageName: string, option: PackageOptionType) => {
       setSelectedPackages((prev) => {
         const existingIndex = prev.findIndex(
           (p) => p.category === category && p.name === packageName
@@ -428,7 +429,54 @@ export default function ROICalculator() {
           placeholder="Enter annual revenue"
           tooltip={inputTooltips.revenue}
         />
-        {/* Add other input fields similarly */}
+        <InputField
+          label="Number of Employees"
+          tooltipUnit="FTE"
+          value={inputs.employees}
+          onChange={(value) => handleInputChange("employees", value)}
+          placeholder="Enter number of employees"
+          tooltip={inputTooltips.employees}
+        />
+        <InputField
+          label="Average Hourly Cost"
+          tooltipUnit="USD/hour"
+          value={inputs.avgHourlyCost}
+          onChange={(value) => handleInputChange("avgHourlyCost", value)}
+          placeholder="Enter average hourly cost"
+          tooltip={inputTooltips.avgHourlyCost}
+        />
+        <InputField
+          label="Manual Task Hours"
+          tooltipUnit="hours/week"
+          value={inputs.manualTaskHours}
+          onChange={(value) => handleInputChange("manualTaskHours", value)}
+          placeholder="Enter manual task hours"
+          tooltip={inputTooltips.manualTaskHours}
+        />
+        <InputField
+          label="Customer Service Hours"
+          tooltipUnit="hours/week"
+          value={inputs.customerServiceHours}
+          onChange={(value) => handleInputChange("customerServiceHours", value)}
+          placeholder="Enter customer service hours"
+          tooltip={inputTooltips.customerServiceHours}
+        />
+        <InputField
+          label="Lost Leads per Month"
+          tooltipUnit="leads/month"
+          value={inputs.lostLeadsPerMonth}
+          onChange={(value) => handleInputChange("lostLeadsPerMonth", value)}
+          placeholder="Enter lost leads per month"
+          tooltip={inputTooltips.lostLeadsPerMonth}
+        />
+        <InputField
+          label="Average Deal Size"
+          tooltipUnit="USD"
+          value={inputs.avgDealSize}
+          onChange={(value) => handleInputChange("avgDealSize", value)}
+          placeholder="Enter average deal size"
+          tooltip={inputTooltips.avgDealSize}
+        />
       </div>
 
       <div className="mt-12">

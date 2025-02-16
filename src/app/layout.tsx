@@ -27,8 +27,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${plusJakarta.variable} ${outfit.variable}`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      {...{
+        "data-new-gr-c-s-check-loaded": "suppress-hydration-warning",
+        "data-gr-ext-installed": "suppress-hydration-warning",
+      }}
+    >
+      <body
+        className={`${plusJakarta.variable} ${outfit.variable}`}
+        {...{
+          "data-new-gr-c-s-check-loaded": "suppress-hydration-warning",
+          "data-gr-ext-installed": "suppress-hydration-warning",
+        }}
+      >
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

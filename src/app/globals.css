@@ -8,8 +8,8 @@
 }
 
 .dark {
-  --stoa-green: #2b5b3f;
-  --stoa-light-green: #3c7d57;
+  --stoa-green: #3c7d57;
+  --stoa-light-green: #4a9b6b;
 }
 
 @layer base {
@@ -19,30 +19,30 @@
 
   h1,
   .title-1 {
-    @apply text-4xl font-bold mb-6 text-center;
+    @apply text-4xl font-bold mb-6 text-center text-gray-900 dark:text-gray-100;
   }
 
   h2,
   .title-2 {
-    @apply text-3xl font-semibold mb-4;
+    @apply text-3xl font-semibold mb-4 text-gray-900 dark:text-gray-100;
   }
 
   h3,
   .title-3 {
-    @apply text-2xl font-semibold mb-3 text-gray-800 dark:text-gray-200;
+    @apply text-2xl font-semibold mb-3 text-gray-800 dark:text-gray-100;
   }
 
   h4,
   .title-4 {
-    @apply text-xl font-medium mb-2;
+    @apply text-xl font-medium mb-2 text-gray-800 dark:text-gray-100;
   }
 
   input {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[var(--stoa-light-green)] focus:border-[var(--stoa-light-green)] dark:border-gray-600 dark:bg-gray-700 dark:text-white transition-colors duration-200;
+    @apply w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[var(--stoa-light-green)] focus:border-[var(--stoa-light-green)] dark:border-gray-600 dark:bg-gray-800 dark:text-white transition-colors duration-200;
   }
 
   select {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[var(--stoa-light-green)] focus:border-[var(--stoa-light-green)] dark:border-gray-600 dark:bg-gray-700 dark:text-white appearance-none bg-white dark:bg-gray-700 cursor-pointer transition-colors duration-200;
+    @apply w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[var(--stoa-light-green)] focus:border-[var(--stoa-light-green)] dark:border-gray-600 dark:bg-gray-800 dark:text-white appearance-none bg-white dark:bg-gray-800 cursor-pointer transition-colors duration-200;
   }
 
   button {
