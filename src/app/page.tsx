@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ROICalculator } from "@/components/ROICalculator";
+import ROICalculator from "@/components/ROICalculator";
 import { BenchmarksExplanation } from "@/components/BenchmarksExplanation";
 import { useTheme } from "@/context/ThemeContext";
 import { SunIcon, MoonIcon } from "@heroicons/react/24/outline";

@@ -1,17 +1,24 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Plus_Jakarta_Sans, Outfit } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
 
-const inter = Inter({ subsets: ["latin"] });
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sans",
+});
+
 const outfit = Outfit({
   subsets: ["latin"],
-  variable: "--font-outfit",
+  display: "swap",
+  variable: "--font-display",
 });
 
 export const metadata: Metadata = {
-  title: "ROI Calculator",
-  description: "Digital Transformation ROI Calculator",
+  title: "STOA Digital Transformation ROI Calculator",
+  description:
+    "Calculate the return on investment for your digital transformation initiatives with STOA's ROI calculator.",
 };
 
 export default function RootLayout({
@@ -21,7 +28,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} ${outfit.variable} font-sans`}>
+      <body className={`${plusJakarta.variable} ${outfit.variable}`}>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

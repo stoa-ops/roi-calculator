@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M20.5 8C14.1487 8 9 13.1487 9 19.5C9 25.8513 14.1487 31 20.5 31C26.8513 31 32 25.8513 32 19.5C32 13.1487 26.8513 8 20.5 8ZM20.5 28C15.8056 28 12 24.1944 12 19.5C12 14.8056 15.8056 11 20.5 11C25.1944 11 29 14.8056 29 19.5C29 24.1944 25.1944 28 20.5 28Z" fill="#2B5B3F"/>
+  <path d="M45 12H65V16H45V12Z" fill="#2B5B3F"/>
+  <path d="M45 18H65V22H45V18Z" fill="#2B5B3F"/>
+  <path d="M45 24H65V28H45V24Z" fill="#2B5B3F"/>
+  <text x="75" y="26" font-family="Plus Jakarta Sans, sans-serif" font-size="24" font-weight="700" fill="#2B5B3F">STOA</text>
+</svg> 

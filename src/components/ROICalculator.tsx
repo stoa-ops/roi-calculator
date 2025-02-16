@@ -65,6 +65,7 @@ interface PackageCategory {
 interface SelectedPackage {
   name: string;
   category: string;
+  tier: string;
   cost: number;
   hours: number;
 }
@@ -344,40 +345,39 @@ export default function ROICalculator() {
     // Start with Technology Assessment cost
     let totalCost = 3600;
 
-    // Add costs for selected packages
-    selectedPackages.forEach(({ category, cost }) => {
-      const packageCategory = packages[category].find(
-        (p) => p.name === category
-      );
-      if (packageCategory) {
-        const option = packageCategory.options.find((o) => o.name === category);
-        if (option) {
-          totalCost += option.cost;
-        }
+    // Add costs for selected packages with validation
+    selectedPackages.forEach(({ category, name, cost }) => {
+      // Find the package category in the packages data
+      const categoryPackages = packages[category];
+      if (!categoryPackages) return;
+
+      // Find the specific package in the category
+      const packageData = categoryPackages.find((p) => p.name === name);
+      if (!packageData) return;
+
+      // Find the option that matches the cost to validate it exists
+      const optionExists = packageData.options.some((opt) => opt.cost === cost);
+      if (optionExists) {
+        totalCost += cost;
       }
     });
 
     return totalCost;
   }, [selectedPackages]);
 
-  // Helper function to calculate implementation cost for a specific driver
   const calculateDriverCost = useCallback(
     (driver: "growth" | "fulfillment" | "innovation") => {
       let driverCost = 0;
-      selectedPackages.forEach(({ category, cost }) => {
-        const packageCategory = packages[driver].find(
-          (p) => p.name === category
-        );
-        if (packageCategory) {
-          const option = packageCategory.options.find(
-            (o) => o.name === category
-          );
-          if (option) {
-            driverCost += option.cost;
-          }
-        }
+      const driverPackages = selectedPackages.filter(
+        (p) => p.category === driver
+      );
+
+      driverPackages.forEach(({ cost }) => {
+        driverCost += cost;
       });
-      return driverCost + (selectedPackages.length > 0 ? 1200 : 0); // Add 1/3 of assessment cost if driver has selections
+
+      // Add 1/3 of assessment cost if driver has selections
+      return driverCost + (driverPackages.length > 0 ? 1200 : 0);
     },
     [selectedPackages]
   );
@@ -397,216 +397,198 @@ export default function ROICalculator() {
       return;
     }
 
-    // Get multipliers based on selected package tiers
-    const getMultiplier = (
-      driver: "growth" | "fulfillment" | "innovation",
-      category: string
-    ) => {
-      const selection = selectedPackages.find(
-        (p) => p.name === category && p.category === driver
-      );
-      if (!selection) return 0; // Return 0 if no tier is selected for this category
-      const tier = selection.name;
-      switch (tier) {
-        case "Basic":
-        case "Starter":
-          return 1;
-        case "Standard":
-        case "Professional":
-          return 1.5;
-        case "Enterprise":
-          return 2;
-        default:
-          return 0;
-      }
-    };
-
-    // Growth Driver Calculations - only if growth tiers are selected
+    // Growth Driver Calculations
     const hasGrowthTiers = selectedPackages.some(
       (p) => p.category === "growth"
     );
+    const leadManagementMultiplier = getMultiplier(
+      "growth",
+      "Lead Management System",
+      selectedPackages
+    );
+    const salesProcessMultiplier = getMultiplier(
+      "growth",
+      "Sales Process Automation",
+      selectedPackages
+    );
+    const marketingMultiplier = getMultiplier(
+      "growth",
+      "Marketing Performance Suite",
+      selectedPackages
+    );
+
     const improvedLeadCapture = hasGrowthTiers
       ? inputs.lostLeadsPerMonth *
         inputs.avgDealSize *
-        (0.25 * getMultiplier("growth", "Lead Management System")) *
-        12
+        (0.25 * 12 * leadManagementMultiplier)
       : 0;
     const salesEfficiency = hasGrowthTiers
       ? inputs.manualTaskHours *
-        (0.3 * getMultiplier("growth", "Sales Process Automation")) *
+        (0.3 * salesProcessMultiplier) *
         inputs.avgHourlyCost *
         52
       : 0;
     const marketingImpact = hasGrowthTiers
-      ? inputs.revenue *
-        (0.05 * getMultiplier("growth", "Marketing Performance Suite"))
+      ? inputs.revenue * (0.05 * marketingMultiplier)
       : 0;
 
-    // Fulfillment Driver Calculations - only if fulfillment tiers are selected
+    // Fulfillment Driver Calculations
     const hasFulfillmentTiers = selectedPackages.some(
       (p) => p.category === "fulfillment"
     );
+    const operationsMultiplier = getMultiplier(
+      "fulfillment",
+      "Operations Automation",
+      selectedPackages
+    );
+    const clientPortalMultiplier = getMultiplier(
+      "fulfillment",
+      "Client Portal Development",
+      selectedPackages
+    );
+    const serviceDeliveryMultiplier = getMultiplier(
+      "fulfillment",
+      "Service Delivery Automation",
+      selectedPackages
+    );
+
     const operationalEfficiency = hasFulfillmentTiers
       ? inputs.manualTaskHours *
-        (0.4 * getMultiplier("fulfillment", "Operations Automation")) *
+        (0.4 * operationsMultiplier) *
         inputs.avgHourlyCost *
         inputs.employees *
         52
       : 0;
     const customerServiceSavings = hasFulfillmentTiers
       ? inputs.customerServiceHours *
-        (0.35 * getMultiplier("fulfillment", "Service Delivery Automation")) *
+        (0.35 * serviceDeliveryMultiplier) *
         inputs.avgHourlyCost *
         52
       : 0;
     const errorReduction = hasFulfillmentTiers
-      ? inputs.revenue *
-        (0.02 * getMultiplier("fulfillment", "Client Portal Development"))
+      ? inputs.revenue * (0.02 * clientPortalMultiplier)
       : 0;
 
-    // Innovation Driver Calculations - only if innovation tiers are selected
+    // Innovation Driver Calculations
     const hasInnovationTiers = selectedPackages.some(
       (p) => p.category === "innovation"
     );
+    const processDigitizationMultiplier = getMultiplier(
+      "innovation",
+      "Process Digitization",
+      selectedPackages
+    );
+    const customSoftwareMultiplier = getMultiplier(
+      "innovation",
+      "Custom Software Development",
+      selectedPackages
+    );
+    const businessIntelligenceMultiplier = getMultiplier(
+      "innovation",
+      "Business Intelligence Implementation",
+      selectedPackages
+    );
+
     const processAutomation = hasInnovationTiers
-      ? inputs.revenue *
-        (0.03 * getMultiplier("innovation", "Process Digitization"))
+      ? inputs.revenue * (0.03 * processDigitizationMultiplier)
       : 0;
     const competitiveAdvantage = hasInnovationTiers
-      ? inputs.revenue *
-        (0.04 * getMultiplier("innovation", "Custom Software Development"))
+      ? inputs.revenue * (0.04 * customSoftwareMultiplier)
       : 0;
     const scalabilityValue = hasInnovationTiers
-      ? inputs.revenue *
-        (0.02 *
-          getMultiplier("innovation", "Business Intelligence Implementation"))
+      ? inputs.revenue * (0.02 * businessIntelligenceMultiplier)
       : 0;
 
-    // Calculate insights for each driver independently
+    // Calculate costs and totals
     const growthCost = calculateDriverCost("growth");
     const fulfillmentCost = calculateDriverCost("fulfillment");
     const innovationCost = calculateDriverCost("innovation");
 
-    const growthInsights = {
-      paybackMonths: hasGrowthTiers
-        ? Math.ceil(
-            (growthCost /
-              (improvedLeadCapture + salesEfficiency + marketingImpact)) *
-              12
-          )
-        : 0,
-      keyMetrics: hasGrowthTiers
-        ? [
-            {
-              label: "Additional Deals/Year",
-              value: Math.round(
-                improvedLeadCapture / inputs.avgDealSize
-              ).toString(),
-            },
-            {
-              label: "Hours Saved/Year",
-              value: Math.round(
-                inputs.manualTaskHours *
-                  (0.3 * getMultiplier("growth", "Sales Process Automation")) *
-                  52
-              ).toString(),
-            },
-            {
-              label: "Revenue Growth",
-              value: formatPercentage(
-                0.05 * getMultiplier("growth", "Marketing Performance Suite")
-              ),
-            },
-          ]
-        : [],
-    };
+    const growthTotal = improvedLeadCapture + salesEfficiency + marketingImpact;
+    const fulfillmentTotal =
+      operationalEfficiency + customerServiceSavings + errorReduction;
+    const innovationTotal =
+      processAutomation + competitiveAdvantage + scalabilityValue;
 
-    const fulfillmentInsights = {
-      paybackMonths: hasFulfillmentTiers
-        ? Math.ceil(
-            (fulfillmentCost /
-              (operationalEfficiency +
-                customerServiceSavings +
-                errorReduction)) *
-              12
-          )
-        : 0,
-      keyMetrics: hasFulfillmentTiers
-        ? [
-            {
-              label: "Operational Hours Saved/Year",
-              value: Math.round(
-                inputs.manualTaskHours *
-                  (0.4 *
-                    getMultiplier("fulfillment", "Operations Automation")) *
-                  52
-              ).toString(),
-            },
-            {
-              label: "Service Efficiency Gain",
-              value: formatPercentage(
-                0.35 *
-                  getMultiplier("fulfillment", "Service Delivery Automation")
-              ),
-            },
-            {
-              label: "Error Reduction",
-              value: formatPercentage(
-                0.02 * getMultiplier("fulfillment", "Client Portal Development")
-              ),
-            },
-          ]
-        : [],
-    };
-
-    const innovationInsights = {
-      paybackMonths: hasInnovationTiers
-        ? Math.ceil(
-            (innovationCost /
-              (processAutomation + competitiveAdvantage + scalabilityValue)) *
-              12
-          )
-        : 0,
-      keyMetrics: hasInnovationTiers
-        ? [
-            {
-              label: "Process Efficiency Gain",
-              value: formatPercentage(
-                0.03 * getMultiplier("innovation", "Process Digitization")
-              ),
-            },
-            {
-              label: "Market Advantage",
-              value: formatPercentage(
-                0.04 *
-                  getMultiplier("innovation", "Custom Software Development")
-              ),
-            },
-            {
-              label: "Scalability Impact",
-              value: formatPercentage(
-                0.02 *
-                  getMultiplier(
-                    "innovation",
-                    "Business Intelligence Implementation"
-                  )
-              ),
-            },
-          ]
-        : [],
-    };
-
+    // Update insights
     setInsights({
-      growth: growthInsights,
-      fulfillment: fulfillmentInsights,
-      innovation: innovationInsights,
+      growth: {
+        paybackMonths:
+          growthTotal > 0 ? Math.ceil((growthCost / growthTotal) * 12) : 0,
+        keyMetrics: hasGrowthTiers
+          ? [
+              {
+                label: "Additional Deals/Year",
+                value: Math.round(
+                  improvedLeadCapture / inputs.avgDealSize
+                ).toString(),
+              },
+              {
+                label: "Hours Saved/Year",
+                value: Math.round(
+                  inputs.manualTaskHours * (0.3 * salesProcessMultiplier) * 52
+                ).toString(),
+              },
+              {
+                label: "Revenue Growth",
+                value: formatPercentage(0.05 * marketingMultiplier),
+              },
+            ]
+          : [],
+      },
+      fulfillment: {
+        paybackMonths:
+          fulfillmentTotal > 0
+            ? Math.ceil((fulfillmentCost / fulfillmentTotal) * 12)
+            : 0,
+        keyMetrics: hasFulfillmentTiers
+          ? [
+              {
+                label: "Operational Hours Saved/Year",
+                value: Math.round(
+                  inputs.manualTaskHours * (0.4 * operationsMultiplier) * 52
+                ).toString(),
+              },
+              {
+                label: "Service Efficiency Gain",
+                value: formatPercentage(0.35 * serviceDeliveryMultiplier),
+              },
+              {
+                label: "Error Reduction",
+                value: formatPercentage(0.02 * clientPortalMultiplier),
+              },
+            ]
+          : [],
+      },
+      innovation: {
+        paybackMonths:
+          innovationTotal > 0
+            ? Math.ceil((innovationCost / innovationTotal) * 12)
+            : 0,
+        keyMetrics: hasInnovationTiers
+          ? [
+              {
+                label: "Process Efficiency Gain",
+                value: formatPercentage(0.03 * processDigitizationMultiplier),
+              },
+              {
+                label: "Market Advantage",
+                value: formatPercentage(0.04 * customSoftwareMultiplier),
+              },
+              {
+                label: "Scalability Impact",
+                value: formatPercentage(0.02 * businessIntelligenceMultiplier),
+              },
+            ]
+          : [],
+      },
     });
 
+    // Update savings
     setSavings({
       growth: {
-        annual: improvedLeadCapture + salesEfficiency + marketingImpact,
-        threeYear:
-          (improvedLeadCapture + salesEfficiency + marketingImpact) * 3.2,
+        annual: growthTotal,
+        threeYear: growthTotal * 3.2,
         details: {
           leadCapture: improvedLeadCapture,
           salesEfficiency: salesEfficiency,
@@ -614,9 +596,8 @@ export default function ROICalculator() {
         },
       },
       fulfillment: {
-        annual: operationalEfficiency + customerServiceSavings + errorReduction,
-        threeYear:
-          (operationalEfficiency + customerServiceSavings + errorReduction) * 3,
+        annual: fulfillmentTotal,
+        threeYear: fulfillmentTotal * 3,
         details: {
           operational: operationalEfficiency,
           customerService: customerServiceSavings,
@@ -624,9 +605,8 @@ export default function ROICalculator() {
         },
       },
       innovation: {
-        annual: processAutomation + competitiveAdvantage + scalabilityValue,
-        threeYear:
-          (processAutomation + competitiveAdvantage + scalabilityValue) * 3.5,
+        annual: innovationTotal,
+        threeYear: innovationTotal * 3.5,
         details: {
           automation: processAutomation,
           competitive: competitiveAdvantage,
@@ -634,14 +614,7 @@ export default function ROICalculator() {
         },
       },
     });
-  }, [
-    inputs,
-    selectedPackages,
-    hasSelectedPackages,
-    calculateDriverCost,
-    setInsights,
-    setSavings,
-  ]);
+  }, [inputs, selectedPackages, hasSelectedPackages, calculateDriverCost]);
 
   // Calculate ROI whenever inputs or selected packages change
   useEffect(() => {
@@ -668,19 +641,38 @@ export default function ROICalculator() {
     }));
   };
 
-  const handlePackageSelection = (category: string, option: PackageOption) => {
+  const handlePackageSelection = (
+    category: string,
+    packageName: string,
+    option: PackageOption
+  ) => {
     setSelectedPackages((prev) => {
-      const exists = prev.some(
-        (p) => p.name === option.name && p.category === category
+      // Find if there's already a selection for this package in this category
+      const existingIndex = prev.findIndex(
+        (p) => p.category === category && p.name === packageName
       );
 
-      if (exists) {
-        return prev.filter(
-          (p) => !(p.name === option.name && p.category === category)
-        );
+      // If this exact package is already selected, remove it (toggle off)
+      if (existingIndex >= 0 && prev[existingIndex].tier === option.name) {
+        return prev.filter((_, index) => index !== existingIndex);
       }
 
-      return [...prev, { ...option, category }];
+      // Remove any existing package of the same type (if different tier was selected)
+      const filtered = prev.filter(
+        (p) => !(p.category === category && p.name === packageName)
+      );
+
+      // Add the new selection with explicit tier tracking
+      return [
+        ...filtered,
+        {
+          category,
+          name: packageName,
+          tier: option.name,
+          cost: option.cost,
+          hours: option.hours,
+        },
+      ];
     });
   };
 
@@ -704,61 +696,75 @@ export default function ROICalculator() {
     driver: "growth" | "fulfillment" | "innovation";
   }) => {
     return (
-      <div className="space-y-6 mt-6">
-        <h4 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Select Solutions
-        </h4>
-        {packages[driver].map((category) => (
-          <div key={category.name} className="relative">
-            <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {category.name}
-              <span className="ml-1 text-gray-400">(Select tier)</span>
-            </label>
-            <div className="relative group">
-              <select
-                className="w-full p-2 border rounded"
-                onChange={(e) => {
-                  const newValue = e.target.value;
-                  const selectedOption = category.options.find(
-                    (opt) => opt.name === newValue
-                  );
-                  if (selectedOption) {
-                    handlePackageSelection(driver, selectedOption);
-                  }
-                }}
-                value={
-                  selectedPackages.find((p) => p.category === driver)?.name ||
-                  ""
-                }
-              >
-                <option value="">Choose a tier</option>
-                {category.options.map((option) => (
-                  <option key={option.name} value={option.name}>
-                    {option.name} (${formatNumberWithCommas(option.cost)})
-                  </option>
-                ))}
-              </select>
-              <div className="opacity-0 invisible group-hover:opacity-100 group-hover:visible absolute left-full ml-4 top-0 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 transition-all duration-200 z-10">
-                <div className="space-y-4">
+      <div className="space-y-6">
+        {packages[driver].map((category) => {
+          // Find the current selection for this package
+          const currentSelection = selectedPackages.find(
+            (p) => p.category === driver && p.name === category.name
+          );
+
+          return (
+            <div key={category.name} className="package-option">
+              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {category.name}
+                <span className="ml-1 text-gray-400">(Select tier)</span>
+              </label>
+              <div className="relative group">
+                <select
+                  className="w-full"
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    if (newValue === "") {
+                      setSelectedPackages((prev) =>
+                        prev.filter(
+                          (p) =>
+                            !(p.category === driver && p.name === category.name)
+                        )
+                      );
+                    } else {
+                      const selectedOption = category.options.find(
+                        (opt) => opt.name === newValue
+                      );
+                      if (selectedOption) {
+                        handlePackageSelection(
+                          driver,
+                          category.name,
+                          selectedOption
+                        );
+                      }
+                    }
+                  }}
+                  value={currentSelection?.tier || ""}
+                >
+                  <option value="">Choose a tier</option>
                   {category.options.map((option) => (
-                    <div key={option.name}>
-                      <h5 className="font-medium text-gray-900 dark:text-white">
-                        {option.name}
-                      </h5>
-                      <p className="text-gray-600 dark:text-gray-300 text-sm mt-1">
-                        {option.description}
-                      </p>
-                      <p className="text-indigo-600 dark:text-indigo-400 text-sm mt-1">
-                        ${formatNumberWithCommas(option.cost)} • {option.hours}{" "}
-                        hours
-                      </p>
-                    </div>
+                    <option key={option.name} value={option.name}>
+                      {option.name} (${formatNumberWithCommas(option.cost)})
+                    </option>
                   ))}
+                </select>
+                <div className="tooltip-content left-full ml-4 top-0">
+                  <div className="space-y-4">
+                    {category.options.map((option) => (
+                      <div key={option.name}>
+                        <h4 className="font-medium text-gray-900 dark:text-white">
+                          {option.name}
+                        </h4>
+                        <p className="text-gray-600 dark:text-gray-300 text-sm mt-1">
+                          {option.description}
+                        </p>
+                        <p className="text-green-600 dark:text-green-400 text-sm mt-1">
+                          ${formatNumberWithCommas(option.cost)} •{" "}
+                          {option.hours} hours
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -779,28 +785,54 @@ export default function ROICalculator() {
       "Average revenue generated from a single customer or transaction",
   };
 
+  const getMultiplier = (
+    driver: "growth" | "fulfillment" | "innovation",
+    packageName: string,
+    selectedPackages: SelectedPackage[]
+  ): number => {
+    const selection = selectedPackages.find(
+      (p) => p.category === driver && p.name === packageName
+    );
+
+    if (!selection) return 0;
+
+    // Use the explicitly stored tier name for multiplier calculation
+    switch (selection.tier) {
+      case "Basic":
+      case "Starter":
+        return 1;
+      case "Standard":
+      case "Professional":
+        return 1.5;
+      case "Enterprise":
+        return 2;
+      default:
+        return 0;
+    }
+  };
+
   return (
     <div className="calculator-container">
-      <h1>ROI Calculator</h1>
+      <div className="flex items-center justify-between mb-8">
+        <img src="/stoa-logo.svg" alt="STOA" className="stoa-logo" />
+        <h1>Digital Transformation ROI Calculator</h1>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Input Fields */}
         <div className="input-group">
           <label className="input-label">
             Annual Revenue
-            <span className="input-tooltip">($)</span>
+            <span className="input-tooltip">(USD)</span>
           </label>
           <input
             type="number"
             value={inputs.revenue}
             onChange={(e) => handleInputChange("revenue", e.target.value)}
             placeholder="Enter annual revenue"
+            min="0"
           />
-          <div className="tooltip-content">
-            <p className="tooltip-text">
-              Enter your company&apos;s annual revenue to help calculate
-              potential savings.
-            </p>
-          </div>
+          <div className="tooltip-content">{inputTooltips.revenue}</div>
         </div>
 
         <div className="input-group">
@@ -813,11 +845,10 @@ export default function ROICalculator() {
             value={inputs.employees}
             onChange={(e) => handleInputChange("employees", e.target.value)}
             placeholder="Enter number of employees"
+            min="0"
           />
           <div className="tooltip-content">
-            <p className="tooltip-text">
-              The total number of employees in your organization.
-            </p>
+            <p className="tooltip-text">{inputTooltips.employees}</p>
           </div>
         </div>
 
@@ -831,12 +862,10 @@ export default function ROICalculator() {
             value={inputs.avgHourlyCost}
             onChange={(e) => handleInputChange("avgHourlyCost", e.target.value)}
             placeholder="Enter average hourly cost"
+            min="0"
           />
           <div className="tooltip-content">
-            <p className="tooltip-text">
-              The average hourly cost per employee including benefits and
-              overhead.
-            </p>
+            <p className="tooltip-text">{inputTooltips.avgHourlyCost}</p>
           </div>
         </div>
 
@@ -852,11 +881,10 @@ export default function ROICalculator() {
               handleInputChange("manualTaskHours", e.target.value)
             }
             placeholder="Enter manual task hours"
+            min="0"
           />
           <div className="tooltip-content">
-            <p className="tooltip-text">
-              Hours spent on manual tasks that could be automated per month.
-            </p>
+            <p className="tooltip-text">{inputTooltips.manualTaskHours}</p>
           </div>
         </div>
 
@@ -872,11 +900,10 @@ export default function ROICalculator() {
               handleInputChange("customerServiceHours", e.target.value)
             }
             placeholder="Enter customer service hours"
+            min="0"
           />
           <div className="tooltip-content">
-            <p className="tooltip-text">
-              Hours spent on customer service activities per month.
-            </p>
+            <p className="tooltip-text">{inputTooltips.customerServiceHours}</p>
           </div>
         </div>
 
@@ -892,12 +919,10 @@ export default function ROICalculator() {
               handleInputChange("lostLeadsPerMonth", e.target.value)
             }
             placeholder="Enter lost leads per month"
+            min="0"
           />
           <div className="tooltip-content">
-            <p className="tooltip-text">
-              Number of potential customers lost due to inefficient processes
-              per month.
-            </p>
+            <p className="tooltip-text">{inputTooltips.lostLeadsPerMonth}</p>
           </div>
         </div>
 
@@ -911,20 +936,19 @@ export default function ROICalculator() {
             value={inputs.avgDealSize}
             onChange={(e) => handleInputChange("avgDealSize", e.target.value)}
             placeholder="Enter average deal size"
+            min="0"
           />
           <div className="tooltip-content">
-            <p className="tooltip-text">
-              The average value of a closed deal or sale.
-            </p>
+            <p className="tooltip-text">{inputTooltips.avgDealSize}</p>
           </div>
         </div>
       </div>
 
-      <div className="mb-8">
+      <div className="mt-12">
         <h2>Select Your Solutions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {Object.entries(packages).map(([category, categoryPackages]) => (
-            <div key={category} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {Object.entries(packages).map(([category]) => (
+            <div key={category} className="package-selector">
               <h3 className="capitalize">{category}</h3>
               <PackageSelector
                 driver={category as "growth" | "fulfillment" | "innovation"}
@@ -934,58 +958,57 @@ export default function ROICalculator() {
         </div>
       </div>
 
-      {insights && (
-        <div className="space-y-6">
-          <h2>ROI Analysis</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Object.values(insights).map(
-              (driverInsight: DriverInsights, index: number) => (
-                <div
-                  key={index}
-                  className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow"
-                >
-                  {driverInsight.keyMetrics.map((metric, metricIndex) => (
-                    <div key={metricIndex}>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {metric.label}
-                      </p>
-                      <p className="text-2xl font-bold text-green-600">
-                        {metric.value}
-                      </p>
+      {insights &&
+        Object.values(insights).some(
+          (insight) => insight.keyMetrics.length > 0
+        ) && (
+          <div className="mt-12">
+            <h2>ROI Analysis</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {Object.entries(insights).map(
+                ([category, driverInsight]) =>
+                  driverInsight.keyMetrics.length > 0 && (
+                    <div key={category} className="roi-card">
+                      <h3 className="capitalize">{category}</h3>
+                      <div className="space-y-6">
+                        {driverInsight.keyMetrics.map((metric, index) => (
+                          <div key={index}>
+                            <p className="metric-label">{metric.label}</p>
+                            <p className="metric-value">{metric.value}</p>
+                          </div>
+                        ))}
+                        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                          <p className="metric-label">ROI Positive In</p>
+                          <p className="metric-value">
+                            {driverInsight.paybackMonths} months
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              )
-            )}
+                  )
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {savings && (
-        <div className="mt-8 space-y-6">
+      {savings && hasSelectedPackages() && (
+        <div className="mt-12">
           <h2>Projected Savings</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {Object.entries(savings).map(([category, data]) => (
-              <div
-                key={category}
-                className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow"
-              >
-                <h3 className="capitalize mb-4">{category}</h3>
-                <div className="space-y-4">
+              <div key={category} className="savings-card">
+                <h3 className="capitalize mb-6">{category}</h3>
+                <div className="space-y-6">
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Annual Savings
-                    </p>
-                    <p className="text-2xl font-bold text-green-600">
-                      ${data.annual.toLocaleString()}
+                    <p className="savings-label">Annual Savings</p>
+                    <p className="savings-value">
+                      ${formatNumberWithCommas(Math.round(data.annual))}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      3-Year Savings
-                    </p>
-                    <p className="text-2xl font-bold text-green-600">
-                      ${data.threeYear.toLocaleString()}
+                    <p className="savings-label">3-Year Savings</p>
+                    <p className="savings-value">
+                      ${formatNumberWithCommas(Math.round(data.threeYear))}
                     </p>
                   </div>
                 </div>
@@ -994,6 +1017,43 @@ export default function ROICalculator() {
           </div>
         </div>
       )}
+
+      <div className="total-impact-footer">
+        <div className="total-impact-content">
+          <div className="impact-metric">
+            <h3 className="impact-value">
+              ${formatNumberWithCommas(calculateImplementationCost())}
+            </h3>
+            <p className="impact-label">Total Implementation Cost</p>
+          </div>
+          <div className="impact-metric">
+            <h3 className="impact-value">
+              $
+              {formatNumberWithCommas(
+                Math.round(
+                  savings.growth.annual +
+                    savings.fulfillment.annual +
+                    savings.innovation.annual || 0
+                )
+              )}
+            </h3>
+            <p className="impact-label">Annual Total Impact</p>
+          </div>
+          <div className="impact-metric">
+            <h3 className="impact-value">
+              $
+              {formatNumberWithCommas(
+                Math.round(
+                  savings.growth.threeYear +
+                    savings.fulfillment.threeYear +
+                    savings.innovation.threeYear || 0
+                )
+              )}
+            </h3>
+            <p className="impact-label">3-Year Total Impact</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
