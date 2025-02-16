@@ -79,10 +79,30 @@
   .tooltip-content {
     @apply invisible opacity-0 absolute z-50 px-3 py-2 text-sm font-medium bg-white text-gray-900 rounded-lg shadow-lg border border-gray-200 dark:bg-gray-800 dark:text-white dark:border-gray-700 transition-all duration-200;
     width: 300px;
-    left: calc(100% + 1rem);
-    top: 0;
   }
 
+  /* Position tooltips above for input groups */
+  .input-group .tooltip-content {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    margin-bottom: 0.5rem;
+  }
+
+  /* Position tooltips below for package options */
+  .package-option .tooltip-content {
+    top: 100%;
+    left: 0;
+    margin-top: 0.5rem;
+  }
+
+  /* Ensure containers have relative positioning */
+  .input-group,
+  .package-option {
+    @apply relative;
+  }
+
+  /* Restore hover visibility */
   .input-group:hover .tooltip-content,
   .package-option:hover .tooltip-content {
     @apply visible opacity-100;
@@ -146,6 +166,14 @@
 
   .impact-label {
     @apply text-sm text-white font-medium;
+  }
+
+  .impact-roi {
+    @apply text-sm text-white/90 font-medium mt-1;
+  }
+
+  .roi-badge {
+    @apply absolute -top-3 -right-3 bg-white text-[var(--stoa-green)] text-sm font-bold px-2 py-1 rounded-full shadow-sm;
   }
 
   .stoa-logo {
