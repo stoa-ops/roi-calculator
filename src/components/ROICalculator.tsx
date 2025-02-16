@@ -62,6 +62,13 @@ interface PackageCategory {
   options: PackageOption[];
 }
 
+interface SelectedPackage {
+  name: string;
+  category: string;
+  cost: number;
+  hours: number;
+}
+
 const packages: Record<string, PackageCategory[]> = {
   growth: [
     {
@@ -282,7 +289,7 @@ const formatNumberWithCommas = (value: number) => {
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
-export const ROICalculator = () => {
+export default function ROICalculator() {
   // Business inputs state with empty initial values
   const [inputs, setInputs] = useState<Inputs>({
     revenue: 0,
@@ -325,20 +332,12 @@ export const ROICalculator = () => {
   });
 
   // Add selected packages state
-  const [selectedPackages, setSelectedPackages] = useState<{
-    growth: string[];
-    fulfillment: string[];
-    innovation: string[];
-  }>({
-    growth: [],
-    fulfillment: [],
-    innovation: [],
-  });
+  const [selectedPackages, setSelectedPackages] = useState<SelectedPackage[]>(
+    []
+  );
 
   const hasSelectedPackages = useCallback(() => {
-    return Object.values(selectedPackages).some(
-      (selections) => selections.length > 0
-    );
+    return selectedPackages.length > 0;
   }, [selectedPackages]);
 
   const calculateImplementationCost = useCallback(() => {
@@ -346,19 +345,16 @@ export const ROICalculator = () => {
     let totalCost = 3600;
 
     // Add costs for selected packages
-    Object.entries(selectedPackages).forEach(([driver, selections]) => {
-      selections.forEach((selection) => {
-        const [category, tier] = selection.split("|");
-        const packageCategory = packages[driver].find(
-          (p) => p.name === category
-        );
-        if (packageCategory) {
-          const option = packageCategory.options.find((o) => o.name === tier);
-          if (option) {
-            totalCost += option.cost;
-          }
+    selectedPackages.forEach(({ category, cost }) => {
+      const packageCategory = packages[category].find(
+        (p) => p.name === category
+      );
+      if (packageCategory) {
+        const option = packageCategory.options.find((o) => o.name === category);
+        if (option) {
+          totalCost += option.cost;
         }
-      });
+      }
     });
 
     return totalCost;
@@ -368,19 +364,20 @@ export const ROICalculator = () => {
   const calculateDriverCost = useCallback(
     (driver: "growth" | "fulfillment" | "innovation") => {
       let driverCost = 0;
-      selectedPackages[driver].forEach((selection) => {
-        const [category, tier] = selection.split("|");
+      selectedPackages.forEach(({ category, cost }) => {
         const packageCategory = packages[driver].find(
           (p) => p.name === category
         );
         if (packageCategory) {
-          const option = packageCategory.options.find((o) => o.name === tier);
+          const option = packageCategory.options.find(
+            (o) => o.name === category
+          );
           if (option) {
             driverCost += option.cost;
           }
         }
       });
-      return driverCost + (selectedPackages[driver].length > 0 ? 1200 : 0); // Add 1/3 of assessment cost if driver has selections
+      return driverCost + (selectedPackages.length > 0 ? 1200 : 0); // Add 1/3 of assessment cost if driver has selections
     },
     [selectedPackages]
   );
@@ -405,11 +402,11 @@ export const ROICalculator = () => {
       driver: "growth" | "fulfillment" | "innovation",
       category: string
     ) => {
-      const selection = selectedPackages[driver].find((s: string) =>
-        s.startsWith(category)
+      const selection = selectedPackages.find(
+        (p) => p.name === category && p.category === driver
       );
       if (!selection) return 0; // Return 0 if no tier is selected for this category
-      const tier = selection.split("|")[1];
+      const tier = selection.name;
       switch (tier) {
         case "Basic":
         case "Starter":
@@ -425,7 +422,9 @@ export const ROICalculator = () => {
     };
 
     // Growth Driver Calculations - only if growth tiers are selected
-    const hasGrowthTiers = selectedPackages.growth.length > 0;
+    const hasGrowthTiers = selectedPackages.some(
+      (p) => p.category === "growth"
+    );
     const improvedLeadCapture = hasGrowthTiers
       ? inputs.lostLeadsPerMonth *
         inputs.avgDealSize *
@@ -444,7 +443,9 @@ export const ROICalculator = () => {
       : 0;
 
     // Fulfillment Driver Calculations - only if fulfillment tiers are selected
-    const hasFulfillmentTiers = selectedPackages.fulfillment.length > 0;
+    const hasFulfillmentTiers = selectedPackages.some(
+      (p) => p.category === "fulfillment"
+    );
     const operationalEfficiency = hasFulfillmentTiers
       ? inputs.manualTaskHours *
         (0.4 * getMultiplier("fulfillment", "Operations Automation")) *
@@ -464,7 +465,9 @@ export const ROICalculator = () => {
       : 0;
 
     // Innovation Driver Calculations - only if innovation tiers are selected
-    const hasInnovationTiers = selectedPackages.innovation.length > 0;
+    const hasInnovationTiers = selectedPackages.some(
+      (p) => p.category === "innovation"
+    );
     const processAutomation = hasInnovationTiers
       ? inputs.revenue *
         (0.03 * getMultiplier("innovation", "Process Digitization"))
@@ -658,13 +661,27 @@ export const ROICalculator = () => {
     });
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const numericValue = parseFloat(value.replace(/,/g, "")) || 0;
+  const handleInputChange = (key: keyof Inputs, value: string) => {
     setInputs((prev) => ({
       ...prev,
-      [name]: numericValue,
+      [key]: value === "" ? 0 : Number(value),
     }));
+  };
+
+  const handlePackageSelection = (category: string, option: PackageOption) => {
+    setSelectedPackages((prev) => {
+      const exists = prev.some(
+        (p) => p.name === option.name && p.category === category
+      );
+
+      if (exists) {
+        return prev.filter(
+          (p) => !(p.name === option.name && p.category === category)
+        );
+      }
+
+      return [...prev, { ...option, category }];
+    });
   };
 
   const formatCurrency = (value: number) => {
@@ -699,36 +716,24 @@ export const ROICalculator = () => {
             </label>
             <div className="relative group">
               <select
-                suppressHydrationWarning
-                className="block w-full pl-3 pr-10 py-3 text-base border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 rounded-lg transition-all duration-200 hover:border-indigo-300 dark:hover:border-indigo-400"
+                className="w-full p-2 border rounded"
                 onChange={(e) => {
                   const newValue = e.target.value;
-                  setSelectedPackages((prev) => ({
-                    ...prev,
-                    [driver]: newValue
-                      ? [
-                          ...prev[driver].filter(
-                            (p) => !p.startsWith(category.name)
-                          ),
-                          newValue,
-                        ]
-                      : prev[driver].filter(
-                          (p) => !p.startsWith(category.name)
-                        ),
-                  }));
+                  const selectedOption = category.options.find(
+                    (opt) => opt.name === newValue
+                  );
+                  if (selectedOption) {
+                    handlePackageSelection(driver, selectedOption);
+                  }
                 }}
                 value={
-                  selectedPackages[driver].find((p) =>
-                    p.startsWith(category.name)
-                  ) || ""
+                  selectedPackages.find((p) => p.category === driver)?.name ||
+                  ""
                 }
               >
                 <option value="">Choose a tier</option>
                 {category.options.map((option) => (
-                  <option
-                    key={option.name}
-                    value={`${category.name}|${option.name}`}
-                  >
+                  <option key={option.name} value={option.name}>
                     {option.name} (${formatNumberWithCommas(option.cost)})
                   </option>
                 ))}
@@ -775,328 +780,220 @@ export const ROICalculator = () => {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto bg-gray-50 dark:bg-gray-900 p-8 rounded-xl">
-      <div className="mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-          Digital Transformation ROI Calculator
-        </h1>
-        <p className="text-xl text-gray-600 dark:text-gray-300">
-          Calculate the potential impact of digital transformation on your
-          business across three key drivers.
-        </p>
+    <div className="calculator-container">
+      <h1>ROI Calculator</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div className="input-group">
+          <label className="input-label">
+            Annual Revenue
+            <span className="input-tooltip">($)</span>
+          </label>
+          <input
+            type="number"
+            value={inputs.revenue}
+            onChange={(e) => handleInputChange("revenue", e.target.value)}
+            placeholder="Enter annual revenue"
+          />
+          <div className="tooltip-content">
+            <p className="tooltip-text">
+              Enter your company&apos;s annual revenue to help calculate
+              potential savings.
+            </p>
+          </div>
+        </div>
+
+        <div className="input-group">
+          <label className="input-label">
+            Number of Employees
+            <span className="input-tooltip">(#)</span>
+          </label>
+          <input
+            type="number"
+            value={inputs.employees}
+            onChange={(e) => handleInputChange("employees", e.target.value)}
+            placeholder="Enter number of employees"
+          />
+          <div className="tooltip-content">
+            <p className="tooltip-text">
+              The total number of employees in your organization.
+            </p>
+          </div>
+        </div>
+
+        <div className="input-group">
+          <label className="input-label">
+            Average Hourly Cost
+            <span className="input-tooltip">($)</span>
+          </label>
+          <input
+            type="number"
+            value={inputs.avgHourlyCost}
+            onChange={(e) => handleInputChange("avgHourlyCost", e.target.value)}
+            placeholder="Enter average hourly cost"
+          />
+          <div className="tooltip-content">
+            <p className="tooltip-text">
+              The average hourly cost per employee including benefits and
+              overhead.
+            </p>
+          </div>
+        </div>
+
+        <div className="input-group">
+          <label className="input-label">
+            Manual Task Hours
+            <span className="input-tooltip">(monthly)</span>
+          </label>
+          <input
+            type="number"
+            value={inputs.manualTaskHours}
+            onChange={(e) =>
+              handleInputChange("manualTaskHours", e.target.value)
+            }
+            placeholder="Enter manual task hours"
+          />
+          <div className="tooltip-content">
+            <p className="tooltip-text">
+              Hours spent on manual tasks that could be automated per month.
+            </p>
+          </div>
+        </div>
+
+        <div className="input-group">
+          <label className="input-label">
+            Customer Service Hours
+            <span className="input-tooltip">(monthly)</span>
+          </label>
+          <input
+            type="number"
+            value={inputs.customerServiceHours}
+            onChange={(e) =>
+              handleInputChange("customerServiceHours", e.target.value)
+            }
+            placeholder="Enter customer service hours"
+          />
+          <div className="tooltip-content">
+            <p className="tooltip-text">
+              Hours spent on customer service activities per month.
+            </p>
+          </div>
+        </div>
+
+        <div className="input-group">
+          <label className="input-label">
+            Lost Leads per Month
+            <span className="input-tooltip">(#)</span>
+          </label>
+          <input
+            type="number"
+            value={inputs.lostLeadsPerMonth}
+            onChange={(e) =>
+              handleInputChange("lostLeadsPerMonth", e.target.value)
+            }
+            placeholder="Enter lost leads per month"
+          />
+          <div className="tooltip-content">
+            <p className="tooltip-text">
+              Number of potential customers lost due to inefficient processes
+              per month.
+            </p>
+          </div>
+        </div>
+
+        <div className="input-group">
+          <label className="input-label">
+            Average Deal Size
+            <span className="input-tooltip">($)</span>
+          </label>
+          <input
+            type="number"
+            value={inputs.avgDealSize}
+            onChange={(e) => handleInputChange("avgDealSize", e.target.value)}
+            placeholder="Enter average deal size"
+          />
+          <div className="tooltip-content">
+            <p className="tooltip-text">
+              The average value of a closed deal or sale.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-        {Object.entries(inputs).map(([key, value]) => (
-          <div key={key} className="space-y-2 relative group">
-            <label
-              htmlFor={key}
-              className="block text-lg font-medium text-gray-900 dark:text-gray-100"
-            >
-              {key === "revenue"
-                ? "Annual Revenue ($)"
-                : key === "avgHourlyCost"
-                ? "Average Hourly Cost ($/hour)"
-                : key === "avgDealSize"
-                ? "Average Deal Size ($)"
-                : key === "manualTaskHours"
-                ? "Weekly Manual Task Hours per Employee"
-                : key === "customerServiceHours"
-                ? "Weekly Customer Service Hours"
-                : key === "lostLeadsPerMonth"
-                ? "Lost Leads per Month"
-                : "Number of Employees"}
-              <span className="ml-1 text-gray-400 text-sm">(?)</span>
-            </label>
-            <div className="relative">
-              <input
-                id={key}
-                name={key}
-                type={
-                  key === "revenue" || key === "avgDealSize" ? "text" : "number"
-                }
-                value={
-                  key === "revenue" || key === "avgDealSize"
-                    ? formatNumberWithCommas(value)
-                    : value
-                }
-                onChange={handleInputChange}
-                className="block w-full px-4 py-3 text-lg rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 transition-colors duration-200"
-                placeholder={key === "revenue" ? "1,000,000" : "0"}
+      <div className="mb-8">
+        <h2>Select Your Solutions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {Object.entries(packages).map(([category, categoryPackages]) => (
+            <div key={category} className="space-y-4">
+              <h3 className="capitalize">{category}</h3>
+              <PackageSelector
+                driver={category as "growth" | "fulfillment" | "innovation"}
               />
-              <div className="opacity-0 invisible group-hover:opacity-100 group-hover:visible absolute left-0 top-full mt-2 w-72 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 transition-all duration-200 z-10">
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  {inputTooltips[key as keyof Inputs]}
-                </p>
-              </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border-t-4 border-green-500">
-          <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-            Growth Driver
-          </h3>
-          <div className="space-y-6">
-            {hasSelectedPackages() ? (
-              <>
-                <div>
-                  <p className="text-4xl font-bold text-green-600 dark:text-green-400">
-                    {formatCurrency(savings.growth.annual)}
-                  </p>
-                  <p className="text-base text-gray-600 dark:text-gray-400 mt-2">
-                    Annual Impact
-                  </p>
-                </div>
-                <div>
-                  <p className="text-2xl font-semibold text-green-800 dark:text-green-300">
-                    {formatCurrency(savings.growth.threeYear)}
-                  </p>
-                  <p className="text-base text-gray-600 dark:text-gray-400 mt-2">
-                    3-Year Impact
-                  </p>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-gray-500 dark:text-gray-400">
-                  Select package tiers to see ROI calculations
-                </p>
-              </div>
-            )}
-            <PackageSelector driver="growth" />
-            {hasSelectedPackages() && (
-              <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-base font-medium text-gray-900 dark:text-white mb-2">
-                  ROI Positive In
-                </p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400 mb-4">
-                  {insights.growth.paybackMonths} months
-                </p>
-                <div className="space-y-3">
-                  {insights.growth.keyMetrics.map((metric, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-center"
-                    >
-                      <span className="text-base text-gray-600 dark:text-gray-400">
-                        {metric.label}
-                      </span>
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
-                        {metric.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border-t-4 border-blue-500">
-          <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-            Fulfillment Driver
-          </h3>
-          <div className="space-y-6">
-            {hasSelectedPackages() ? (
-              <>
-                <div>
-                  <p className="text-4xl font-bold text-blue-600 dark:text-blue-400">
-                    {formatCurrency(savings.fulfillment.annual)}
-                  </p>
-                  <p className="text-base text-gray-600 dark:text-gray-400 mt-2">
-                    Annual Impact
-                  </p>
-                </div>
-                <div>
-                  <p className="text-2xl font-semibold text-blue-800 dark:text-blue-300">
-                    {formatCurrency(savings.fulfillment.threeYear)}
-                  </p>
-                  <p className="text-base text-gray-600 dark:text-gray-400 mt-2">
-                    3-Year Impact
-                  </p>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-gray-500 dark:text-gray-400">
-                  Select package tiers to see ROI calculations
-                </p>
-              </div>
-            )}
-            <PackageSelector driver="fulfillment" />
-            {hasSelectedPackages() && (
-              <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-base font-medium text-gray-900 dark:text-white mb-2">
-                  ROI Positive In
-                </p>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-4">
-                  {insights.fulfillment.paybackMonths} months
-                </p>
-                <div className="space-y-3">
-                  {insights.fulfillment.keyMetrics.map((metric, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-center"
-                    >
-                      <span className="text-base text-gray-600 dark:text-gray-400">
-                        {metric.label}
-                      </span>
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
-                        {metric.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border-t-4 border-purple-500">
-          <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
-            Innovation Driver
-          </h3>
-          <div className="space-y-6">
-            {hasSelectedPackages() ? (
-              <>
-                <div>
-                  <p className="text-4xl font-bold text-purple-600 dark:text-purple-400">
-                    {formatCurrency(savings.innovation.annual)}
-                  </p>
-                  <p className="text-base text-gray-600 dark:text-gray-400 mt-2">
-                    Annual Impact
-                  </p>
-                </div>
-                <div>
-                  <p className="text-2xl font-semibold text-purple-800 dark:text-purple-300">
-                    {formatCurrency(savings.innovation.threeYear)}
-                  </p>
-                  <p className="text-base text-gray-600 dark:text-gray-400 mt-2">
-                    3-Year Impact
-                  </p>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-gray-500 dark:text-gray-400">
-                  Select package tiers to see ROI calculations
-                </p>
-              </div>
-            )}
-            <PackageSelector driver="innovation" />
-            {hasSelectedPackages() && (
-              <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
-                <p className="text-base font-medium text-gray-900 dark:text-white mb-2">
-                  ROI Positive In
-                </p>
-                <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mb-4">
-                  {insights.innovation.paybackMonths} months
-                </p>
-                <div className="space-y-3">
-                  {insights.innovation.keyMetrics.map((metric, index) => (
-                    <div
-                      key={index}
-                      className="flex justify-between items-center"
-                    >
-                      <span className="text-base text-gray-600 dark:text-gray-400">
-                        {metric.label}
-                      </span>
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
-                        {metric.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          ))}
         </div>
       </div>
 
-      {hasSelectedPackages() ? (
-        <div className="bg-green-900 dark:bg-green-800 p-8 rounded-xl shadow-lg text-white">
-          <div className="flex justify-between items-start mb-8">
-            <div>
-              <h3 className="text-2xl font-semibold">Total Impact</h3>
-              <p className="text-base opacity-80 mt-2">
-                Estimated return on your digital transformation investment
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-base font-medium">Total Implementation Cost</p>
-              <p className="text-3xl font-bold mt-1">
-                {formatCurrency(calculateImplementationCost())}
-              </p>
-              <p className="text-sm opacity-80 mt-2">
-                Includes Initial Technology Assessment & Roadmap ($3,600)
-              </p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-white/10 rounded-xl p-6">
-              <div>
-                <div className="flex items-baseline">
-                  <p className="text-5xl font-bold">
-                    {formatCurrency(
-                      savings.growth.annual +
-                        savings.fulfillment.annual +
-                        savings.innovation.annual
-                    )}
-                  </p>
-                  <p className="text-lg ml-2 opacity-80">
-                    (
-                    {Math.round(
-                      ((savings.growth.annual +
-                        savings.fulfillment.annual +
-                        savings.innovation.annual -
-                        calculateImplementationCost()) /
-                        calculateImplementationCost()) *
-                        100
-                    )}
-                    % ROI)
-                  </p>
+      {insights && (
+        <div className="space-y-6">
+          <h2>ROI Analysis</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Object.values(insights).map(
+              (driverInsight: DriverInsights, index: number) => (
+                <div
+                  key={index}
+                  className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow"
+                >
+                  {driverInsight.keyMetrics.map((metric, metricIndex) => (
+                    <div key={metricIndex}>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {metric.label}
+                      </p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {metric.value}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-base opacity-80 mt-2">Annual Total Impact</p>
-              </div>
-            </div>
-            <div className="bg-white/10 rounded-xl p-6">
-              <div>
-                <div className="flex items-baseline">
-                  <p className="text-5xl font-bold">
-                    {formatCurrency(
-                      savings.growth.threeYear +
-                        savings.fulfillment.threeYear +
-                        savings.innovation.threeYear
-                    )}
-                  </p>
-                  <p className="text-lg ml-2 opacity-80">
-                    (
-                    {Math.round(
-                      ((savings.growth.threeYear +
-                        savings.fulfillment.threeYear +
-                        savings.innovation.threeYear -
-                        calculateImplementationCost()) /
-                        calculateImplementationCost()) *
-                        100
-                    )}
-                    % ROI)
-                  </p>
-                </div>
-                <p className="text-base opacity-80 mt-2">3-Year Total Impact</p>
-              </div>
-            </div>
+              )
+            )}
           </div>
         </div>
-      ) : (
-        <div className="bg-gray-100 dark:bg-gray-800 p-8 rounded-xl text-center">
-          <p className="text-xl text-gray-500 dark:text-gray-400">
-            Select at least one package tier to see total impact calculations
-          </p>
+      )}
+
+      {savings && (
+        <div className="mt-8 space-y-6">
+          <h2>Projected Savings</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {Object.entries(savings).map(([category, data]) => (
+              <div
+                key={category}
+                className="p-6 bg-white dark:bg-gray-800 rounded-lg shadow"
+              >
+                <h3 className="capitalize mb-4">{category}</h3>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Annual Savings
+                    </p>
+                    <p className="text-2xl font-bold text-green-600">
+                      ${data.annual.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      3-Year Savings
+                    </p>
+                    <p className="text-2xl font-bold text-green-600">
+                      ${data.threeYear.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
-};
+}
