@@ -7,6 +7,11 @@
   --stoa-light-green: #3c7d57;
 }
 
+.dark {
+  --stoa-green: #2b5b3f;
+  --stoa-light-green: #3c7d57;
+}
+
 @layer base {
   body {
     @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100;

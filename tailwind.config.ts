@@ -6,8 +6,14 @@ const config: Config = {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  darkMode: "class",
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        "stoa-green": "var(--stoa-green)",
+        "stoa-light-green": "var(--stoa-light-green)",
+      },
+    },
   },
   plugins: [],
 };
