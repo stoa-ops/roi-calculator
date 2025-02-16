@@ -1,0 +1,25 @@
+.tooltip {
+  @apply relative inline-block;
+}
+
+.tooltip .tooltiptext {
+  @apply invisible absolute z-50 w-48 rounded-md px-3 py-2 text-sm;
+  @apply bg-white text-gray-900 shadow-lg;
+  @apply border border-gray-200;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -60px;
+}
+
+.tooltip .tooltiptext::after {
+  @apply absolute left-1/2;
+  @apply border-8 border-solid border-transparent;
+  @apply border-t-white;
+  content: "";
+  margin-left: -8px;
+  top: 100%;
+}
+
+.tooltip:hover .tooltiptext {
+  @apply visible;
+}

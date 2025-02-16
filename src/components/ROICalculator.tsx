@@ -409,14 +409,6 @@ export default function ROICalculator() {
   return (
     <div className="calculator-container">
       <div className="flex items-center justify-between mb-8">
-        <Image
-          src="/stoa-logo.svg"
-          alt="STOA"
-          className="stoa-logo"
-          width={120}
-          height={40}
-          priority
-        />
         <h1>Digital Transformation ROI Calculator</h1>
       </div>
 
