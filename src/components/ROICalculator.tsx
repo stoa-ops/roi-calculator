@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 
 interface Savings {
   growth: {
@@ -676,15 +677,6 @@ export default function ROICalculator() {
     });
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
   const formatPercentage = (value: number) => {
     return `${(value * 100).toFixed(1)}%`;
   };
@@ -814,7 +806,14 @@ export default function ROICalculator() {
   return (
     <div className="calculator-container">
       <div className="flex items-center justify-between mb-8">
-        <img src="/stoa-logo.svg" alt="STOA" className="stoa-logo" />
+        <Image
+          src="/stoa-logo.svg"
+          alt="STOA"
+          className="stoa-logo"
+          width={120}
+          height={40}
+          priority
+        />
         <h1>Digital Transformation ROI Calculator</h1>
       </div>
 
