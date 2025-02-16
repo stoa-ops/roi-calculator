@@ -1,8 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Digital Transformation ROI Calculator
+
+A sophisticated calculator that helps businesses estimate the return on investment for their digital transformation initiatives across three key drivers: Growth, Fulfillment, and Innovation.
+
+## Features
+
+- Interactive ROI calculation based on business metrics
+- Three transformation drivers with multiple solution tiers
+- Detailed breakdown of potential savings and benefits
+- Dark/Light mode support
+- Responsive design
+- Real-time updates
+- Comprehensive tooltips and explanations
+
+## Tech Stack
+
+- Next.js 13+ with App Router
+- TypeScript
+- Tailwind CSS
+- React Context for theme management
+- Modern font pairing (Inter & Outfit)
 
 ## Getting Started
 
-First, run the development server:
+First, install the dependencies:
+
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+```
+
+Then, run the development server:
 
 ```bash
 npm run dev
@@ -10,15 +40,32 @@ npm run dev
 yarn dev
 # or
 pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This application is optimized for deployment on Vercel. To deploy:
+
+1. Push your code to a GitHub repository
+2. Visit [Vercel](https://vercel.com)
+3. Import your repository
+4. Deploy
+
+The application will be automatically built and deployed with optimal settings.
+
+## Environment Variables
+
+No environment variables are required for basic functionality.
+
+## License
+
+MIT
+
+## Author
+
+[Your Name]
 
 ## Learn More
 
