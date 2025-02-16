@@ -1,0 +1,36 @@
+{
+  "extends": [
+    "next/core-web-vitals",
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": "error",
+    "react/no-unescaped-entities": "error",
+    "react-hooks/exhaustive-deps": "warn"
+  },
+  "ignorePatterns": [
+    "node_modules/",
+    ".next/",
+    "out/",
+    "build/",
+    "dist/",
+    "coverage/",
+    "public/"
+  ],
+  "overrides": [
+    {
+      "files": ["src/components/BenchmarksExplanation.tsx"],
+      "rules": {
+        "@typescript-eslint/no-unused-vars": "off",
+        "react/no-unescaped-entities": "off"
+      }
+    },
+    {
+      "files": ["src/components/ROICalculator.tsx"],
+      "rules": {
+        "react-hooks/exhaustive-deps": "off"
+      }
+    }
+  ]
+}

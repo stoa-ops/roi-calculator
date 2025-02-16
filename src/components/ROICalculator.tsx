@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 interface Savings {
   growth: {
@@ -294,19 +294,6 @@ export const ROICalculator = () => {
     avgDealSize: 0,
   });
 
-  // Set default values after initial render
-  useEffect(() => {
-    setInputs({
-      revenue: 1000000,
-      employees: 10,
-      avgHourlyCost: 50,
-      manualTaskHours: 20,
-      customerServiceHours: 15,
-      lostLeadsPerMonth: 10,
-      avgDealSize: 5000,
-    });
-  }, []);
-
   // Calculated savings state
   const [savings, setSavings] = useState<Savings>({
     growth: {
@@ -348,12 +335,13 @@ export const ROICalculator = () => {
     innovation: [],
   });
 
-  // Calculate ROI whenever inputs or selected packages change
-  useEffect(() => {
-    calculateROI();
-  }, [inputs, selectedPackages]);
+  const hasSelectedPackages = useCallback(() => {
+    return Object.values(selectedPackages).some(
+      (selections) => selections.length > 0
+    );
+  }, [selectedPackages]);
 
-  const calculateImplementationCost = () => {
+  const calculateImplementationCost = useCallback(() => {
     // Start with Technology Assessment cost
     let totalCost = 3600;
 
@@ -374,15 +362,30 @@ export const ROICalculator = () => {
     });
 
     return totalCost;
-  };
+  }, [selectedPackages]);
 
-  const hasSelectedPackages = () => {
-    return Object.values(selectedPackages).some(
-      (selections) => selections.length > 0
-    );
-  };
+  // Helper function to calculate implementation cost for a specific driver
+  const calculateDriverCost = useCallback(
+    (driver: "growth" | "fulfillment" | "innovation") => {
+      let driverCost = 0;
+      selectedPackages[driver].forEach((selection) => {
+        const [category, tier] = selection.split("|");
+        const packageCategory = packages[driver].find(
+          (p) => p.name === category
+        );
+        if (packageCategory) {
+          const option = packageCategory.options.find((o) => o.name === tier);
+          if (option) {
+            driverCost += option.cost;
+          }
+        }
+      });
+      return driverCost + (selectedPackages[driver].length > 0 ? 1200 : 0); // Add 1/3 of assessment cost if driver has selections
+    },
+    [selectedPackages]
+  );
 
-  const calculateROI = () => {
+  const calculateROI = useCallback(() => {
     if (!hasSelectedPackages()) {
       setInsights({
         growth: { paybackMonths: 0, keyMetrics: [] },
@@ -628,25 +631,32 @@ export const ROICalculator = () => {
         },
       },
     });
-  };
+  }, [
+    inputs,
+    selectedPackages,
+    hasSelectedPackages,
+    calculateDriverCost,
+    setInsights,
+    setSavings,
+  ]);
 
-  // Helper function to calculate implementation cost for a specific driver
-  const calculateDriverCost = (
-    driver: "growth" | "fulfillment" | "innovation"
-  ) => {
-    let driverCost = 0;
-    selectedPackages[driver].forEach((selection) => {
-      const [category, tier] = selection.split("|");
-      const packageCategory = packages[driver].find((p) => p.name === category);
-      if (packageCategory) {
-        const option = packageCategory.options.find((o) => o.name === tier);
-        if (option) {
-          driverCost += option.cost;
-        }
-      }
+  // Calculate ROI whenever inputs or selected packages change
+  useEffect(() => {
+    calculateROI();
+  }, [calculateROI]);
+
+  // Set default values after initial render
+  useEffect(() => {
+    setInputs({
+      revenue: 1000000,
+      employees: 10,
+      avgHourlyCost: 50,
+      manualTaskHours: 20,
+      customerServiceHours: 15,
+      lostLeadsPerMonth: 10,
+      avgDealSize: 5000,
     });
-    return driverCost + (selectedPackages[driver].length > 0 ? 1200 : 0); // Add 1/3 of assessment cost if driver has selections
-  };
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

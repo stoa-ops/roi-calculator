@@ -2,78 +2,6 @@
 
 import React from "react";
 
-const benchmarks = [
-  {
-    category: "Growth Driver",
-    metrics: [
-      {
-        name: "Lead Capture Improvement",
-        value: "25%",
-        explanation:
-          "Based on industry data showing digital transformation typically improves lead conversion rates by 20-30% through better tracking and engagement.",
-      },
-      {
-        name: "Sales Efficiency",
-        value: "30%",
-        explanation:
-          "Reduction in manual sales tasks through automation and improved CRM integration.",
-      },
-      {
-        name: "Marketing Impact",
-        value: "5%",
-        explanation:
-          "Conservative estimate of revenue increase through improved digital marketing capabilities and customer targeting.",
-      },
-    ],
-  },
-  {
-    category: "Fulfillment Driver",
-    metrics: [
-      {
-        name: "Operational Efficiency",
-        value: "40%",
-        explanation:
-          "Reduction in manual operational tasks through process automation and workflow optimization.",
-      },
-      {
-        name: "Customer Service Optimization",
-        value: "35%",
-        explanation:
-          "Improvement in customer service efficiency through automated responses and better ticket management.",
-      },
-      {
-        name: "Error Reduction",
-        value: "2%",
-        explanation:
-          "Cost savings from reduced errors in manual processes and improved accuracy.",
-      },
-    ],
-  },
-  {
-    category: "Innovation Driver",
-    metrics: [
-      {
-        name: "Process Automation",
-        value: "3%",
-        explanation:
-          "Efficiency gains through automated workflows and reduced manual intervention.",
-      },
-      {
-        name: "Competitive Advantage",
-        value: "4%",
-        explanation:
-          "Revenue impact from improved market position and customer satisfaction.",
-      },
-      {
-        name: "Scalability Value",
-        value: "2%",
-        explanation:
-          "Additional growth capacity through improved systems and processes.",
-      },
-    ],
-  },
-];
-
 export const BenchmarksExplanation = () => {
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -270,7 +198,7 @@ export const BenchmarksExplanation = () => {
             </div>
             <div>
               <h4 className="font-medium text-gray-900 dark:text-white">
-                What's Included
+                What&apos;s Included
               </h4>
               <p className="mt-1">
                 All packages include implementation, training, and support at
